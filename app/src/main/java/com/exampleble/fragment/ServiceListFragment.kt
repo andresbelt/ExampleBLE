@@ -14,13 +14,12 @@ import androidx.fragment.app.Fragment
 import com.clj.fastble.BleManager
 import com.exampleble.MainActivity
 import com.exampleble.R
-import java.util.ArrayList
 
 class ServiceListFragment: Fragment() {
 
-    private var txt_name: TextView? = null
-    private var txt_mac:TextView? = null
-    private var mResultAdapter: ResultAdapter? = null
+    private var textName: TextView? = null
+    private var textMac: TextView? = null
+    private var resultAdapter: ResultAdapter? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,48 +32,41 @@ class ServiceListFragment: Fragment() {
         return v
     }
 
-
     private fun initView(v: View) {
-        txt_name = v.findViewById(R.id.txt_name) as TextView
-        txt_mac = v.findViewById(R.id.txt_mac) as TextView
+        textName = v.findViewById(R.id.txt_name)
+        textMac = v.findViewById(R.id.txt_mac)
 
-        mResultAdapter = ResultAdapter(context!!)
-        val listView_device = v.findViewById(R.id.list_service) as ListView
-        listView_device.adapter = mResultAdapter
-        listView_device.onItemClickListener =
-            AdapterView.OnItemClickListener { parent, view, position, id ->
-                val service = mResultAdapter!!.getItem(position)
-                (activity as MainActivity).setBluetoothGattService(service!!)
+        resultAdapter = ResultAdapter(context)
+        val listViewDevice = v.findViewById<ListView>(R.id.list_service)
+        listViewDevice.adapter = resultAdapter
+        listViewDevice.onItemClickListener =
+            AdapterView.OnItemClickListener { _, _, position, _ ->
+                val service = resultAdapter?.getItem(position)
+                (activity as MainActivity).bluetoothGattService = service
                 (activity as MainActivity).changePage(2)
             }
-
-
     }
 
     private fun showData() {
-        val bleDevice = (activity as MainActivity).getBleDevice()
+        val bleDevice = (activity as MainActivity).bleDevice
 
-        val name = bleDevice!!.name
-        val mac = bleDevice!!.mac
+        val name = bleDevice?.name
+        val mac = bleDevice?.mac
         val gatt = BleManager.getInstance().getBluetoothGatt(bleDevice)
 
-        txt_name!!.text = activity!!.getString(R.string.name) + name
-        txt_mac!!.setText(activity!!.getString(R.string.mac) + mac)
+        textName?.text = getString(R.string.name) + name
+        textMac?.text = getString(R.string.mac) + mac
 
-        mResultAdapter!!.clear()
-        for (service in gatt.services) {
-            mResultAdapter!!.addResult(service)
+        resultAdapter?.clear()
+        gatt.services.forEach { service ->
+            resultAdapter?.addResult(service)
         }
-        mResultAdapter!!.notifyDataSetChanged()
+        resultAdapter?.notifyDataSetChanged()
     }
 
-    private inner class ResultAdapter internal constructor(private val context: Context) :
-        BaseAdapter() {
-        private val bluetoothGattServices: MutableList<BluetoothGattService>
+    private inner class ResultAdapter internal constructor(private val context: Context?) : BaseAdapter() {
 
-        init {
-            bluetoothGattServices = ArrayList()
-        }
+        private val bluetoothGattServices = mutableListOf<BluetoothGattService>()
 
         internal fun addResult(service: BluetoothGattService) {
             bluetoothGattServices.add(service)
@@ -96,34 +88,34 @@ class ServiceListFragment: Fragment() {
             return 0
         }
 
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            var convertView = convertView
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
+            var view = convertView
             val holder: ViewHolder
-            if (convertView != null) {
-                holder = convertView.tag as ViewHolder
+            if (view != null) {
+                holder = view.tag as ViewHolder
             } else {
-                convertView = View.inflate(context,
+                view = View.inflate(context,
                     R.layout.adapter_service, null)
                 holder = ViewHolder()
-                convertView!!.tag = holder
-                holder.txt_title = convertView.findViewById(R.id.txt_title) as TextView
-                holder.txt_uuid = convertView.findViewById(R.id.txt_uuid) as TextView
-                holder.txt_type = convertView.findViewById(R.id.txt_type) as TextView
+                view?.tag = holder
+                holder.textTitle = view.findViewById(R.id.text_title)
+                holder.textUuid = view.findViewById(R.id.text_uuid)
+                holder.textType = view.findViewById(R.id.text_type)
             }
 
             val service = bluetoothGattServices[position]
             val uuid = service.uuid.toString()
 
-            holder.txt_title!!.text = activity!!.getString(R.string.service) + "(" + position + ")"
-            holder.txt_uuid!!.text = uuid
-            holder.txt_type!!.text = activity!!.getString(R.string.type)
-            return convertView
+            holder.textTitle?.text = activity!!.getString(R.string.service) + "(" + position + ")"
+            holder.textUuid?.text = uuid
+            holder.textType?.text = activity!!.getString(R.string.type)
+            return view
         }
 
         internal inner class ViewHolder {
-            var txt_title: TextView? = null
-            var txt_uuid: TextView? = null
-            var txt_type: TextView? = null
+            var textTitle: TextView? = null
+            var textUuid: TextView? = null
+            var textType: TextView? = null
         }
     }
 }

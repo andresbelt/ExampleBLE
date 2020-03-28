@@ -1,4 +1,4 @@
-package com.desarollobluetooth.fragments
+package com.exampleble.fragment
 
 import android.Manifest
 import android.app.AlertDialog
@@ -6,7 +6,6 @@ import android.app.ProgressDialog
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothGatt
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -34,27 +33,22 @@ import com.exampleble.R
 import com.exampleble.observers.ObserverManager
 import java.util.*
 
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-private const val REQUEST_CODE_OPEN_GPS = 1
-private const val REQUEST_CODE_PERMISSION_LOCATION = 2
-private var mDeviceAdapter: DeviceAdapter? = null
-private var layout_setting: LinearLayout? = null
-private var btns_: LinearLayout? = null
-private var btn_scan: Button? = null
-private var btn_write: Button? = null
-private var btn_notify: Button? = null
-private var img_loading: ImageView? = null
-
-private var txt_title: TextView? = null
-private var txt: TextView? = null
-
-private var operatingAnim: Animation? = null
-private var progressDialog: ProgressDialog? = null
-private var listener: MainFragment.OnFragmentInteractionListener? = null
-
-
 class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
+
+    private var deviceAdapter: DeviceAdapter? = null
+    private var layoutSetting: LinearLayout? = null
+    private var buttons: LinearLayout? = null
+    private var buttonScan: Button? = null
+    private var buttonWrite: Button? = null
+    private var buttonNotify: Button? = null
+    private var imageLoading: ImageView? = null
+
+    private var textTitle: TextView? = null
+    private var text: TextView? = null
+
+    private var operatingAnimation: Animation? = null
+    private var progressDialog: ProgressDialog? = null
+    private var listener: OnFragmentInteractionListener? = null
 
     override fun onConnect(bleDevice: BleDevice?) {
         if (!BleManager.getInstance().isConnected(bleDevice)) {
@@ -66,23 +60,21 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
 
     override fun onDisConnect(bleDevice: BleDevice?) {
         if (BleManager.getInstance().isConnected(bleDevice)) {
-            btns_?.visibility = View.INVISIBLE
+            buttons?.visibility = View.INVISIBLE
             BleManager.getInstance().disconnect(bleDevice)
         }
     }
 
     override fun onDetail(bleDevice: BleDevice?) {
         if (BleManager.getInstance().isConnected(bleDevice)) {
-
             onButtonPressed(bleDevice)
         }
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        BleManager.getInstance().init(activity!!.application)
+        BleManager.getInstance().init(activity?.application)
         BleManager.getInstance()
             .enableLog(true)
             .setReConnectCount(1, 5000)
@@ -94,80 +86,59 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view: View = inflater.inflate(
-            R.layout.fragment_main,
-            null
-        )
+        val view: View = inflater.inflate(R.layout.fragment_main, null)
 
-        btn_scan = view.findViewById(R.id.btn_scan) as Button
-        btn_scan?.text = getString(R.string.start_scan)
-        btn_scan?.setOnClickListener {
-
-            if (btn_scan?.text == getString(R.string.start_scan)) {
+        buttonScan = view.findViewById(R.id.button_scan) as Button
+        buttonScan?.text = getString(R.string.start_scan)
+        buttonScan?.setOnClickListener {
+            if (buttonScan?.text == getString(R.string.start_scan)) {
                 checkPermissions()
-            } else if (btn_scan?.text == getString(R.string.stop_scan)) {
+            } else if (buttonScan?.text == getString(R.string.stop_scan)) {
                 BleManager.getInstance().cancelScan()
             }
 
-            val bleDevice = (activity as MainActivity).getBleDevice()
+            val bleDevice = (activity as MainActivity).bleDevice
 
             if (BleManager.getInstance().isConnected(bleDevice)) {
                 onButtonPressed(bleDevice)
             }
-
         }
 
-        txt_title = view.findViewById(R.id.txt_title) as TextView
+        textTitle = view.findViewById(R.id.text_title)
 
-        txt = view.findViewById(R.id.txt) as TextView
+        text = view.findViewById(R.id.txt)
 
+        layoutSetting?.visibility = View.GONE
 
-        layout_setting?.visibility = View.GONE
+        buttons = view.findViewById(R.id.buttons)
+        buttonWrite = view.findViewById(R.id.button_write)
+        buttonNotify = view.findViewById(R.id.button_notify)
 
-        btns_ = view.findViewById(R.id.btns_) as LinearLayout
-        btn_write = view.findViewById(R.id.btn_write) as Button
-        btn_notify = view.findViewById(R.id.btn_notify) as Button
-
-        img_loading = view.findViewById(R.id.img_loading) as ImageView
-        operatingAnim = AnimationUtils.loadAnimation(context, R.anim.rotate)
-        operatingAnim?.interpolator = LinearInterpolator()
+        imageLoading = view.findViewById(R.id.image_loading)
+        operatingAnimation = AnimationUtils.loadAnimation(context, R.anim.rotate)
+        operatingAnimation?.interpolator = LinearInterpolator()
         progressDialog = ProgressDialog(context)
 
-        mDeviceAdapter = DeviceAdapter(context!!)
+        deviceAdapter = DeviceAdapter(context)
 
-        mDeviceAdapter?.setOnDeviceClickListener(this)
+        deviceAdapter?.setOnDeviceClickListener(this)
 
-
-        btn_notify?.setOnClickListener {
-          //  onClickNotify()
-        }
-
-        btn_write?.setOnClickListener {
-          //  onClickWrite()
-        }
-
-
-        val listViewDevice = view.findViewById(R.id.list_device) as ListView
-        listViewDevice.adapter = mDeviceAdapter
-
+        val listViewDevice = view.findViewById<ListView>(R.id.list_device)
+        listViewDevice.adapter = deviceAdapter
 
         return view
     }
 
-
-
-
-    fun onButtonPressed(BleDvice: BleDevice?) {
-        listener?.onFragmentInteraction(BleDvice)
+    fun onButtonPressed(BleDevice: BleDevice?) {
+        listener?.onFragmentInteraction(BleDevice)
     }
-
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnFragmentInteractionListener) {
             listener = context
         } else {
-            throw RuntimeException(context.toString() + " must implement OnFragmentInteractionListener") as Throwable
+            throw RuntimeException("$context must implement OnFragmentInteractionListener")
         }
     }
 
@@ -175,7 +146,6 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
         super.onDetach()
         listener = null
     }
-
 
     private fun checkPermissions() {
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -197,7 +167,7 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
                 permissionDeniedList.add(permission)
             }
         }
-        if (!permissionDeniedList.isEmpty()) {
+        if (permissionDeniedList.isNotEmpty()) {
             val deniedPermissions = permissionDeniedList.toTypedArray()
             activity?.let {
                 ActivityCompat.requestPermissions(
@@ -218,14 +188,13 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
                     AlertDialog.Builder(context)
                         .setTitle(R.string.notifyTitle)
                         .setMessage(R.string.gpsNotifyMsg)
-                        .setNegativeButton(R.string.cancel,
-                            DialogInterface.OnClickListener { dialog, which -> activity?.finish() })
-                        .setPositiveButton(R.string.setting,
-                            DialogInterface.OnClickListener { dialog, which ->
-                                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                                startActivityForResult(intent, REQUEST_CODE_OPEN_GPS)
-                            })
-
+                        .setNegativeButton(R.string.cancel
+                        ) { _, _ -> activity?.finish() }
+                        .setPositiveButton(R.string.setting
+                        ) { _, _ ->
+                            val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                            startActivityForResult(intent, REQUEST_CODE_OPEN_GPS)
+                        }
                         .setCancelable(false)
                         .show()
                 } else {
@@ -236,22 +205,22 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
 
     private fun showConnectedDevice() {
         val deviceList = BleManager.getInstance().allConnectedDevice
-        mDeviceAdapter?.clearConnectedDevice()
-        for (bleDevice in deviceList) {
-            mDeviceAdapter?.addDevice(bleDevice)
-        }
-        mDeviceAdapter?.notifyDataSetChanged()
-    }
+        deviceAdapter?.clearConnectedDevice()
 
+        deviceList?.forEach { device ->
+            deviceAdapter?.addDevice(device)
+        }
+        deviceAdapter?.notifyDataSetChanged()
+    }
 
     private fun startScan() {
         BleManager.getInstance().scan(object : BleScanCallback() {
             override fun onScanStarted(success: Boolean) {
-                mDeviceAdapter?.clearScanDevice()
-                mDeviceAdapter?.notifyDataSetChanged()
-                img_loading?.startAnimation(operatingAnim)
-                img_loading?.visibility = View.VISIBLE
-                btn_scan?.text = getString(R.string.stop_scan)
+                deviceAdapter?.clearScanDevice()
+                deviceAdapter?.notifyDataSetChanged()
+                imageLoading?.startAnimation(operatingAnimation)
+                imageLoading?.visibility = View.VISIBLE
+                buttonScan?.text = getString(R.string.stop_scan)
             }
 
             override fun onLeScan(bleDevice: BleDevice?) {
@@ -259,14 +228,14 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
             }
 
             override fun onScanning(bleDevice: BleDevice) {
-                mDeviceAdapter?.addDevice(bleDevice)
-                mDeviceAdapter?.notifyDataSetChanged()
+                deviceAdapter?.addDevice(bleDevice)
+                deviceAdapter?.notifyDataSetChanged()
             }
 
             override fun onScanFinished(scanResultList: List<BleDevice>) {
-                img_loading?.clearAnimation()
-                img_loading?.setVisibility(View.INVISIBLE)
-                btn_scan?.setText(getString(R.string.start_scan))
+                imageLoading?.clearAnimation()
+                imageLoading?.visibility = View.INVISIBLE
+                buttonScan?.text = getString(R.string.start_scan)
             }
         })
     }
@@ -278,9 +247,9 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
             }
 
             override fun onConnectFail(bleDevice: BleDevice, exception: BleException) {
-                img_loading?.clearAnimation()
-                img_loading?.setVisibility(View.INVISIBLE)
-                btn_scan?.setText(getString(R.string.start_scan))
+                imageLoading?.clearAnimation()
+                imageLoading?.visibility = View.INVISIBLE
+                buttonScan?.text = getString(R.string.start_scan)
                 progressDialog?.dismiss()
                 Toast.makeText(
                     context,
@@ -291,14 +260,12 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
 
             override fun onConnectSuccess(bleDevice: BleDevice, gatt: BluetoothGatt, status: Int) {
                 progressDialog?.dismiss()
-                mDeviceAdapter?.addDevice(bleDevice)
-                mDeviceAdapter?.notifyDataSetChanged()
+                deviceAdapter?.addDevice(bleDevice)
+                deviceAdapter?.notifyDataSetChanged()
                 onButtonPressed(bleDevice)
 
-                mDeviceAdapter?.clearScanDevice()
-                mDeviceAdapter?.notifyDataSetChanged()
-
-
+                deviceAdapter?.clearScanDevice()
+                deviceAdapter?.notifyDataSetChanged()
             }
 
             override fun onDisConnected(
@@ -308,10 +275,10 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
                 status: Int
             ) {
                 progressDialog?.dismiss()
-                btns_?.visibility = View.INVISIBLE
+                buttons?.visibility = View.INVISIBLE
 
-                mDeviceAdapter?.removeDevice(bleDevice)
-                mDeviceAdapter?.notifyDataSetChanged()
+                deviceAdapter?.removeDevice(bleDevice)
+                deviceAdapter?.notifyDataSetChanged()
 
                 if (isActiveDisConnected) {
                     Toast.makeText(
@@ -325,36 +292,37 @@ class MainFragment : Fragment(), DeviceAdapter.OnDeviceClickListener {
                         getString(R.string.disconnected),
                         Toast.LENGTH_LONG
                     ).show()
-                    ObserverManager.getInstance().notifyObserver(bleDevice)
+                    ObserverManager.instance.notifyObserver(bleDevice)
                 }
-
             }
         })
     }
 
-
     private fun checkGPSIsOpen(): Boolean {
-        val locationManager =
-            activity?.getSystemService(Context.LOCATION_SERVICE) as LocationManager
-                ?: return false
-        return locationManager.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)
+        val locationManager = activity?.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
     }
-
 
     interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
-        fun onFragmentInteraction(bledevice: BleDevice?)
+        fun onFragmentInteraction(bleDevice: BleDevice?)
     }
 
     companion object {
 
+        private const val ARG_PARAM1 = "param1"
+        private const val ARG_PARAM2 = "param2"
+        private const val REQUEST_CODE_OPEN_GPS = 1
+        private const val REQUEST_CODE_PERMISSION_LOCATION = 2
+
         @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            MainFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
+        fun newInstance(param1: String, param2: String) = MainFragment()
+            .apply {
+                arguments = Bundle()
+                    .apply {
+                        putString(ARG_PARAM1, param1)
+                        putString(ARG_PARAM2, param2)
+                    }
             }
     }
 }

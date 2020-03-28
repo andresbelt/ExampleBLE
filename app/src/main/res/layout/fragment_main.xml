@@ -21,19 +21,19 @@
         android:padding="10dp">
 
         <Button
-            android:id="@+id/btn_scan"
+            android:id="@+id/button_scan"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:text="@string/start_scan" />
 
         <ImageView
-            android:id="@+id/img_loading"
+            android:id="@+id/image_loading"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:layout_marginRight="10dp"
+            android:layout_marginEnd="10dp"
             android:visibility="invisible" />
 
     </RelativeLayout>
@@ -52,7 +52,7 @@
     </ListView>
 
     <LinearLayout
-        android:id="@+id/btns_"
+        android:id="@+id/buttons"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -60,22 +60,22 @@
         android:visibility="gone">
 
         <Button
-            android:id="@+id/btn_notify"
+            android:id="@+id/button_notify"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/open_notification" />
 
 
         <Button
-            android:id="@+id/btn_write"
+            android:id="@+id/button_write"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
+            android:layout_gravity="center"
             android:text="@string/write" />
 
 
         <TextView
-            android:id="@+id/txt_title"
+            android:id="@+id/text_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="10dp"

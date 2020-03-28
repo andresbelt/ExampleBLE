@@ -2,7 +2,6 @@ package com.exampleble.fragment
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.content.Context
-import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,15 +9,13 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import com.desarollobluetooth.fragments.CharacteristicOperationFragment
 import com.exampleble.MainActivity
 import com.exampleble.R
-import java.util.ArrayList
+import java.util.*
 
 class CharacteristicListFragment: Fragment() {
 
-
-    private var mResultAdapter: ResultAdapter? = null
+    private var resultAdapter: ResultAdapter? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,72 +28,68 @@ class CharacteristicListFragment: Fragment() {
     }
 
     private fun initView(v: View) {
-        mResultAdapter = ResultAdapter(context!!)
-        val listView_device = v.findViewById(R.id.list_service) as ListView
-        listView_device.adapter = mResultAdapter
-        listView_device.onItemClickListener =
-            AdapterView.OnItemClickListener { parent, view, position, id ->
-                val characteristic = mResultAdapter!!.getItem(position)
-                val propList = ArrayList<Int>()
-                val propNameList = ArrayList<String>()
-                val charaProp = characteristic!!.properties
-                if (charaProp and BluetoothGattCharacteristic.PROPERTY_READ > 0) {
-                    propList.add(CharacteristicOperationFragment.PROPERTY_READ)
-                    propNameList.add("Read")
-                }
-                if (charaProp and BluetoothGattCharacteristic.PROPERTY_WRITE > 0) {
-                    propList.add(CharacteristicOperationFragment.PROPERTY_WRITE)
-                    propNameList.add("Write")
-                }
-                if (charaProp and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE > 0) {
-                    propList.add(CharacteristicOperationFragment.PROPERTY_WRITE_NO_RESPONSE)
-                    propNameList.add("Write No Response")
-                }
-                if (charaProp and BluetoothGattCharacteristic.PROPERTY_NOTIFY > 0) {
-                    propList.add(CharacteristicOperationFragment.PROPERTY_NOTIFY)
-                    propNameList.add("Notify")
-                }
-                if (charaProp and BluetoothGattCharacteristic.PROPERTY_INDICATE > 0) {
-                    propList.add(CharacteristicOperationFragment.PROPERTY_INDICATE)
-                    propNameList.add("Indicate")
-                }
+        resultAdapter = ResultAdapter(context)
+        val listViewDevice = v.findViewById<ListView>(R.id.list_service)
+        listViewDevice.adapter = resultAdapter
+        listViewDevice.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
+            val characteristic = resultAdapter?.getItem(position)
+            val propList = ArrayList<Int>()
+            val propNameList = ArrayList<String>()
+            val charaProp = characteristic?.properties ?: 0
+            if (charaProp and BluetoothGattCharacteristic.PROPERTY_READ > 0) {
+                propList.add(CharacteristicOperationFragment.PROPERTY_READ)
+                propNameList.add("Read")
+            }
+            if (charaProp and BluetoothGattCharacteristic.PROPERTY_WRITE > 0) {
+                propList.add(CharacteristicOperationFragment.PROPERTY_WRITE)
+                propNameList.add("Write")
+            }
+            if (charaProp and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE > 0) {
+                propList.add(CharacteristicOperationFragment.PROPERTY_WRITE_NO_RESPONSE)
+                propNameList.add("Write No Response")
+            }
+            if (charaProp and BluetoothGattCharacteristic.PROPERTY_NOTIFY > 0) {
+                propList.add(CharacteristicOperationFragment.PROPERTY_NOTIFY)
+                propNameList.add("Notify")
+            }
+            if (charaProp and BluetoothGattCharacteristic.PROPERTY_INDICATE > 0) {
+                propList.add(CharacteristicOperationFragment.PROPERTY_INDICATE)
+                propNameList.add("Indicate")
+            }
 
+            (activity as MainActivity).let {
                 if (propList.size > 1) {
-                    AlertDialog.Builder(activity!!)
+                    AlertDialog.Builder(it)
                         .setTitle(activity!!.getString(R.string.select_operation_type))
-                        .setItems(propNameList.toTypedArray(),
-                            DialogInterface.OnClickListener { dialog, which ->
-                                (getActivity() as MainActivity).setCharacteristic(
-                                    characteristic
-                                )
-                                (getActivity() as MainActivity).setCharaProp(propList[which])
-                                (getActivity() as MainActivity).changePage(3)
-                            })
+                        .setItems(propNameList.toTypedArray()
+                        ) { _, which ->
+                            it.characteristic = characteristic
+                            it.charaProp = propList[which]
+                            it.changePage(3)
+                        }
                         .show()
-                } else if (propList.size > 0) {
-                    (getActivity() as MainActivity).setCharacteristic(characteristic)
-                    (getActivity() as MainActivity).setCharaProp(propList[0])
-                    (activity as MainActivity).changePage(3)
+                }
+                if (propList.size > 0) {
+                    it.characteristic = characteristic
+                    it.charaProp = propList[0]
+                    it.changePage(3)
                 }
             }
+        }
     }
 
     fun showData() {
-        val service = (activity as MainActivity).getBluetoothGattService()
-        mResultAdapter!!.clear()
-        for (characteristic in service!!.characteristics) {
-            mResultAdapter!!.addResult(characteristic)
+        val service = (activity as MainActivity).bluetoothGattService
+        resultAdapter?.clear()
+        service?.characteristics?.forEach { characteristic ->
+            resultAdapter?.addResult(characteristic)
         }
-        mResultAdapter!!.notifyDataSetChanged()
+        resultAdapter?.notifyDataSetChanged()
     }
 
-    private inner class ResultAdapter internal constructor(private val context: Context) :
-        BaseAdapter() {
-        private val characteristicList: MutableList<BluetoothGattCharacteristic>
+    private inner class ResultAdapter internal constructor(private val context: Context?) : BaseAdapter() {
 
-        init {
-            characteristicList = ArrayList()
-        }
+        private val characteristicList = mutableListOf<BluetoothGattCharacteristic>()
 
         internal fun addResult(characteristic: BluetoothGattCharacteristic) {
             characteristicList.add(characteristic)
@@ -118,27 +111,26 @@ class CharacteristicListFragment: Fragment() {
             return 0
         }
 
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            var convertView = convertView
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
+            var view = convertView
             val holder: ViewHolder
-            if (convertView != null) {
-                holder = convertView.tag as ViewHolder
+            if (view != null) {
+                holder = view.tag as ViewHolder
             } else {
-                convertView = View.inflate(context,
-                    R.layout.adapter_service, null)
+                view = View.inflate(context, R.layout.adapter_service, null)
                 holder = ViewHolder()
-                convertView!!.tag = holder
-                holder.txt_title = convertView.findViewById(R.id.txt_title) as TextView
-                holder.txt_uuid = convertView.findViewById(R.id.txt_uuid) as TextView
-                holder.txt_type = convertView.findViewById(R.id.txt_type) as TextView
-                holder.img_next = convertView.findViewById(R.id.img_next) as ImageView
+                view?.tag = holder
+                holder.textTitle = view.findViewById(R.id.text_title)
+                holder.textUuid = view.findViewById(R.id.text_uuid)
+                holder.textType = view.findViewById(R.id.text_type)
+                holder.imageNext = view.findViewById(R.id.image_next)
             }
 
             val characteristic = characteristicList[position]
             val uuid = characteristic.uuid.toString()
 
-            holder.txt_title!!.setText((getActivity()!!.getString(R.string.characteristic) + "（" + position + ")").toString())
-            holder.txt_uuid!!.text = uuid
+            holder.textTitle?.text = (getString(R.string.characteristic) + "（" + position + ")")
+            holder.textUuid?.text = uuid
 
             val property = StringBuilder()
             val charaProp = characteristic.properties
@@ -165,21 +157,21 @@ class CharacteristicListFragment: Fragment() {
             if (property.length > 1) {
                 property.delete(property.length - 2, property.length - 1)
             }
-            if (property.length > 0) {
-                holder.txt_type!!.setText((getActivity()!!.getString(R.string.characteristic) + "( " + property.toString() + ")").toString())
-                holder.img_next!!.visibility = View.VISIBLE
+            if (property.isNotEmpty()) {
+                holder.textType?.text = (getString(R.string.characteristic) + "( " + property.toString() + ")")
+                holder.imageNext?.visibility = View.VISIBLE
             } else {
-                holder.img_next!!.visibility = View.INVISIBLE
+                holder.imageNext?.visibility = View.INVISIBLE
             }
 
-            return convertView
+            return view
         }
 
         internal inner class ViewHolder {
-            var txt_title: TextView? = null
-            var txt_uuid: TextView? = null
-            var txt_type: TextView? = null
-            var img_next: ImageView? = null
+            var textTitle: TextView? = null
+            var textUuid: TextView? = null
+            var textType: TextView? = null
+            var imageNext: ImageView? = null
         }
     }
 
