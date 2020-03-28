@@ -9,21 +9,21 @@
         android:layout_height="wrap_content">
 
         <Button
-            android:id="@+id/btn"
+            android:id="@+id/button"
             android:layout_width="70dp"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:layout_marginLeft="10dp"
+            android:layout_marginStart="10dp"
             android:gravity="center"
             android:textSize="15sp" />
 
         <EditText
-            android:id="@+id/et"
+            android:id="@+id/editText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
-            android:layout_toLeftOf="@id/btn"
+            android:layout_toStartOf="@id/button"
             android:digits="0123456789ABCDEFabcdef"
             android:gravity="center_vertical"
             android:hint="@string/input_hex"

@@ -11,42 +11,37 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
 import com.clj.fastble.BleManager
 import com.clj.fastble.data.BleDevice
-import com.desarollobluetooth.fragments.CharacteristicOperationFragment
-import com.desarollobluetooth.fragments.MainFragment
 import com.exampleble.fragment.CharacteristicListFragment
+import com.exampleble.fragment.CharacteristicOperationFragment
+import com.exampleble.fragment.MainFragment
 import com.exampleble.fragment.ServiceListFragment
 import com.exampleble.observers.Observer
 import com.exampleble.observers.ObserverManager
-import java.util.*
 
 class MainActivity : AppCompatActivity(), MainFragment.OnFragmentInteractionListener, Observer {
 
-
     private var titles = arrayOfNulls<String>(3)
-    private var bleDevice: BleDevice? = null
-    private var bluetoothGattService: BluetoothGattService? = null
-    private var characteristic: BluetoothGattCharacteristic? = null
-    private var charaProp: Int = 0
+
+    var bleDevice: BleDevice? = null
+        private set
+
+    var bluetoothGattService: BluetoothGattService? = null
+    var characteristic: BluetoothGattCharacteristic? = null
+    var charaProp: Int = 0
     private var currentPage = 0
-    private val fragments = ArrayList<Fragment>()
+    private val fragments = mutableListOf<Fragment>()
     private var toolbar: Toolbar? = null
 
-
-    override fun disConnected(device: BleDevice?) {
-        if (device != null && bleDevice != null && device.key == bleDevice!!.key) {
-            //finish()
-            Toast.makeText(
-                this,
-                "Desconnection",
-                Toast.LENGTH_LONG
-            ).show()
+    override fun disconnected(device: BleDevice?) {
+        if (device != null && bleDevice != null && device.key == bleDevice?.key) {
+            Toast.makeText(this, "Disconnection", Toast.LENGTH_LONG).show()
             changePage(1)
         }
     }
 
     fun changePage(page: Int) {
         currentPage = page
-        toolbar!!.title = titles[page]
+        toolbar?.title = titles[page]
         updateFragment(page)
         if (currentPage == 2) {
             (fragments[2] as CharacteristicListFragment).showData()
@@ -55,38 +50,39 @@ class MainActivity : AppCompatActivity(), MainFragment.OnFragmentInteractionList
         }
     }
 
-    fun initPage() {
-       // prepareFragment()
-        //onNotify()
-        val fragmentTransaction = supportFragmentManager.beginTransaction()
-        fragmentTransaction.replace(R.id.frameLayout, fragments[0])
-        fragmentTransaction.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
-        fragmentTransaction.commit()
-
+    private fun initPage() {
+        with(supportFragmentManager.beginTransaction()) {
+            replace(R.id.frameLayout, fragments[0])
+            setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
+            commit()
+        }
     }
 
     private fun prepareFragment() {
+        with(fragments) {
+            add(ServiceListFragment())
+            add(CharacteristicListFragment())
+            add(CharacteristicOperationFragment())
 
-        fragments.add(ServiceListFragment())
-        fragments.add(CharacteristicListFragment())
-        fragments.add(CharacteristicOperationFragment())
-
-            for (fragment in fragments) {
-                if ( fragment !is MainFragment) {
-                    supportFragmentManager.beginTransaction().add(R.id.frameLayout, fragment)
-                        .hide(fragment).commit()
-                }  }
+            forEach { fragment ->
+                if (fragment !is MainFragment) {
+                    supportFragmentManager
+                        .beginTransaction()
+                        .add(R.id.frameLayout, fragment)
+                        .hide(fragment)
+                        .commit()
+                }
+            }
+        }
     }
-
 
     private fun updateFragment(position: Int) {
         if (position > fragments.size - 1) {
             return
         }
-        for (i in fragments.indices) {
+        fragments.forEachIndexed { index, fragment ->
             val transaction = supportFragmentManager.beginTransaction()
-            val fragment = fragments[i]
-            if (i == position) {
+            if (index == position) {
                 transaction.show(fragment)
             } else {
                 transaction.hide(fragment)
@@ -95,12 +91,11 @@ class MainActivity : AppCompatActivity(), MainFragment.OnFragmentInteractionList
         }
     }
 
-    override fun onFragmentInteraction(bledevice: BleDevice?) {
-        this.bleDevice = bledevice
+    override fun onFragmentInteraction(bleDevice: BleDevice?) {
+        this.bleDevice = bleDevice
         prepareFragment()
         changePage(1)
     }
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,14 +108,13 @@ class MainActivity : AppCompatActivity(), MainFragment.OnFragmentInteractionList
             getString(R.string.console)
         )
 
-
         toolbar = findViewById(R.id.toolbar)
-        toolbar!!.title = titles[0]
+        toolbar?.title = titles[0]
         setSupportActionBar(toolbar)
         fragments.add(MainFragment.newInstance("",""))
 
         initPage()
-        ObserverManager.getInstance().addObserver(this)
+        ObserverManager.instance.addObserver(this)
     }
 
 
@@ -131,7 +125,6 @@ class MainActivity : AppCompatActivity(), MainFragment.OnFragmentInteractionList
                 changePage(currentPage)
                 true
             } else {
-
                 true
             }
         } else super.onKeyDown(keyCode, event)
@@ -141,35 +134,6 @@ class MainActivity : AppCompatActivity(), MainFragment.OnFragmentInteractionList
     override fun onDestroy() {
         super.onDestroy()
         BleManager.getInstance().clearCharacterCallback(bleDevice)
-        ObserverManager.getInstance().deleteObserver(this)
+        ObserverManager.instance.deleteObserver(this)
     }
-
-    fun getBleDevice(): BleDevice? {
-        return this.bleDevice
-    }
-
-    fun getBluetoothGattService(): BluetoothGattService? {
-        return bluetoothGattService
-    }
-
-    fun setBluetoothGattService(bluetoothGattService: BluetoothGattService) {
-        this.bluetoothGattService = bluetoothGattService
-    }
-
-    fun getCharacteristic(): BluetoothGattCharacteristic? {
-        return characteristic
-    }
-
-    fun setCharacteristic(characteristic: BluetoothGattCharacteristic) {
-        this.characteristic = characteristic
-    }
-
-    fun getCharaProp(): Int {
-        return charaProp
-    }
-
-    fun setCharaProp(charaProp: Int) {
-        this.charaProp = charaProp
-    }
-
 }

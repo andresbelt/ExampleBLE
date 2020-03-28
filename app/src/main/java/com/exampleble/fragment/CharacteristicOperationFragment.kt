@@ -1,4 +1,4 @@
-package com.desarollobluetooth.fragments
+package com.exampleble.fragment
 
 import android.os.Bundle
 import android.text.TextUtils
@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.view.forEach
 import androidx.fragment.app.Fragment
 import com.clj.fastble.BleManager
 import com.clj.fastble.callback.BleIndicateCallback
@@ -20,7 +21,6 @@ import com.clj.fastble.exception.BleException
 import com.clj.fastble.utils.HexUtil
 import com.exampleble.MainActivity
 import com.exampleble.R
-import java.util.ArrayList
 
 class CharacteristicOperationFragment: Fragment() {
 
@@ -32,8 +32,8 @@ class CharacteristicOperationFragment: Fragment() {
         const val PROPERTY_INDICATE = 5
     }
 
-    private var layout_container: LinearLayout? = null
-    private val childList = ArrayList<String>()
+    private var layoutContainer: LinearLayout? = null
+    private val childList = mutableListOf<String>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,260 +46,269 @@ class CharacteristicOperationFragment: Fragment() {
     }
 
     private fun initView(v: View) {
-        layout_container = v.findViewById(R.id.layout_container) as LinearLayout
+        layoutContainer = v.findViewById(R.id.layout_container) as LinearLayout
     }
 
     fun showData() {
-        val bleDevice = (getActivity() as MainActivity).getBleDevice()
-        val characteristic = (getActivity() as MainActivity).getCharacteristic()
-        val charaProp = (getActivity() as MainActivity).getCharaProp()
-        val child = characteristic!!.uuid.toString() + charaProp.toString()
+        with(activity as MainActivity) {
+            val child = characteristic?.uuid.toString() + charaProp.toString()
 
-        for (i in 0 until layout_container!!.childCount) {
-            layout_container!!.getChildAt(i).visibility = View.GONE
-        }
-        if (childList.contains(child)) {
-            layout_container!!.findViewWithTag<View>(bleDevice!!.key + characteristic!!.uuid.toString() + charaProp)
-                .visibility = View.VISIBLE
-        } else {
-            childList.add(child)
-
-            val view = LayoutInflater.from(getActivity())
-                .inflate(R.layout.layout_characteric_operation, null)
-            view.setTag(bleDevice!!.key + characteristic!!.uuid.toString() + charaProp)
-            val layout_add = view.findViewById(R.id.layout_add) as LinearLayout
-            val txt_title = view.findViewById(R.id.txt_title) as TextView
-            txt_title.text =
-                characteristic.getUuid().toString() + getActivity()!!.getString(R.string.data_changed)
-            val txt = view.findViewById(R.id.txt) as TextView
-            txt.movementMethod = ScrollingMovementMethod.getInstance()
-
-            when (charaProp) {
-                PROPERTY_READ -> {
-                    val view_add = LayoutInflater.from(getActivity())
-                        .inflate(R.layout.layout_characteric_operation_button, null)
-                    val btn = view_add.findViewById(R.id.btn) as Button
-                    btn.setText(getActivity()!!.getString(R.string.read))
-                    btn.setOnClickListener {
-                        BleManager.getInstance().read(
-                            bleDevice,
-                            characteristic.getService().uuid.toString(),
-                            characteristic.getUuid().toString(),
-                            object : BleReadCallback() {
-
-                                override fun onReadSuccess(data: ByteArray) {
-                                    runOnUiThread(Runnable {
-                                        addText(
-                                            txt,
-                                            HexUtil.formatHexString(data, true)
-                                        )
-                                    })
-                                }
-
-                                override fun onReadFailure(exception: BleException) {
-                                    runOnUiThread(Runnable { addText(txt, exception.toString()) })
-                                }
-                            })
-                    }
-                    layout_add.addView(view_add)
-                }
-
-                PROPERTY_WRITE -> {
-                    val view_add = LayoutInflater.from(getActivity())
-                        .inflate(R.layout.layout_characteric_operation_et, null)
-                    val et = view_add.findViewById(R.id.et) as EditText
-                    val btn = view_add.findViewById(R.id.btn) as Button
-                    btn.setText(getActivity()!!.getString(R.string.write))
-                    btn.setOnClickListener(View.OnClickListener {
-                        val hex = et.text.toString()
-                        if (TextUtils.isEmpty(hex)) {
-                            return@OnClickListener
-                        }
-                        BleManager.getInstance().write(
-                            bleDevice,
-                            characteristic.getService().uuid.toString(),
-                            characteristic.getUuid().toString(),
-                            HexUtil.hexStringToBytes(hex),
-                            object : BleWriteCallback() {
-
-                                override fun onWriteSuccess(
-                                    current: Int,
-                                    total: Int,
-                                    justWrite: ByteArray
-                                ) {
-                                    runOnUiThread(Runnable {
-                                        addText(
-                                            txt, "write success, current: " + current
-                                                    + " total: " + total
-                                                    + " justWrite: " + HexUtil.formatHexString(
-                                                justWrite,
-                                                true
-                                            )
-                                        )
-                                    })
-                                }
-
-                                override fun onWriteFailure(exception: BleException) {
-                                    runOnUiThread(Runnable { addText(txt, exception.toString()) })
-                                }
-                            })
-                    })
-                    layout_add.addView(view_add)
-                }
-
-                PROPERTY_WRITE_NO_RESPONSE -> {
-                    val view_add = LayoutInflater.from(getActivity())
-                        .inflate(R.layout.layout_characteric_operation_et, null)
-                    val et = view_add.findViewById(R.id.et) as EditText
-                    val btn = view_add.findViewById(R.id.btn) as Button
-                    btn.setText(getActivity()!!.getString(R.string.write))
-                    btn.setOnClickListener(View.OnClickListener {
-                        val hex = et.text.toString()
-                        if (TextUtils.isEmpty(hex)) {
-                            return@OnClickListener
-                        }
-                        BleManager.getInstance().write(
-                            bleDevice,
-                            characteristic.getService().uuid.toString(),
-                            characteristic.getUuid().toString(),
-                            HexUtil.hexStringToBytes(hex),
-                            object : BleWriteCallback() {
-
-                                override fun onWriteSuccess(
-                                    current: Int,
-                                    total: Int,
-                                    justWrite: ByteArray
-                                ) {
-                                    runOnUiThread(Runnable {
-                                        addText(
-                                            txt, "write success, current: " + current
-                                                    + " total: " + total
-                                                    + " justWrite: " + HexUtil.formatHexString(
-                                                justWrite,
-                                                true
-                                            )
-                                        )
-                                    })
-                                }
-
-                                override fun onWriteFailure(exception: BleException) {
-                                    runOnUiThread(Runnable { addText(txt, exception.toString()) })
-                                }
-                            })
-                    })
-                    layout_add.addView(view_add)
-                }
-
-                PROPERTY_NOTIFY -> {
-                    val view_add = LayoutInflater.from(getActivity())
-                        .inflate(R.layout.layout_characteric_operation_button, null)
-                    val btn = view_add.findViewById(R.id.btn) as Button
-                    btn.setText(getActivity()!!.getString(R.string.open_notification))
-                    btn.setOnClickListener {
-                        if (btn.text.toString() == getActivity()!!.getString(R.string.open_notification)) {
-                            btn.setText(getActivity()!!.getString(R.string.close_notification))
-                            BleManager.getInstance().notify(
-                                bleDevice,
-                                characteristic.service.uuid.toString(),
-                                characteristic.uuid.toString(),
-                                object : BleNotifyCallback() {
-
-                                    override fun onNotifySuccess() {
-                                        runOnUiThread(Runnable { addText(txt, "notify success") })
-                                    }
-
-                                    override fun onNotifyFailure(exception: BleException) {
-                                        runOnUiThread(Runnable {
-                                            addText(
-                                                txt,
-                                                exception.toString()
-                                            )
-                                        })
-                                    }
-
-                                    override fun onCharacteristicChanged(data: ByteArray) {
-                                        runOnUiThread(Runnable {
-                                            addText(
-                                                txt,
-                                                HexUtil.formatHexString(
-                                                    characteristic.getValue(),
-                                                    true
-                                                )
-                                            )
-                                        })
-                                    }
-                                })
-                        } else {
-                            btn.text = getActivity()!!.getString(R.string.open_notification)
-                            BleManager.getInstance().stopNotify(
-                                bleDevice,
-                                characteristic!!.service.uuid.toString(),
-                                characteristic!!.uuid.toString()
-                            )
-                        }
-                    }
-                    layout_add.addView(view_add)
-                }
-
-                PROPERTY_INDICATE -> {
-                    val view_add = LayoutInflater.from(getActivity())
-                        .inflate(R.layout.layout_characteric_operation_button, null)
-                    val btn = view_add.findViewById(R.id.btn) as Button
-                    btn.setText(getActivity()!!.getString(R.string.open_notification))
-                    btn.setOnClickListener {
-                        if (btn.text.toString() == getActivity()!!.getString(R.string.open_notification)) {
-                            btn.setText(getActivity()!!.getString(R.string.close_notification))
-                            BleManager.getInstance().indicate(
-                                bleDevice,
-                                characteristic.getService().uuid.toString(),
-                                characteristic.getUuid().toString(),
-                                object : BleIndicateCallback() {
-
-                                    override fun onIndicateSuccess() {
-                                        runOnUiThread(Runnable { addText(txt, "indicate success") })
-                                    }
-
-                                    override fun onIndicateFailure(exception: BleException) {
-                                        runOnUiThread(Runnable {
-                                            addText(
-                                                txt,
-                                                exception.toString()
-                                            )
-                                        })
-                                    }
-
-                                    override fun onCharacteristicChanged(data: ByteArray) {
-                                        runOnUiThread(Runnable {
-                                            addText(
-                                                txt,
-                                                HexUtil.formatHexString(
-                                                    characteristic!!.value,
-                                                    true
-                                                )
-                                            )
-                                        })
-                                    }
-                                })
-                        } else {
-                            btn.setText(getActivity()!!.getString(R.string.open_notification))
-                            BleManager.getInstance().stopIndicate(
-                                bleDevice,
-                                characteristic!!.service.uuid.toString(),
-                                characteristic!!.uuid.toString()
-                            )
-                        }
-                    }
-                    layout_add.addView(view_add)
-                }
+            layoutContainer?.forEach { container ->
+                container.visibility = View.GONE
             }
+            if (childList.contains(child)) {
+                layoutContainer?.findViewWithTag<View>(bleDevice?.key + characteristic?.uuid.toString() + charaProp)
+                    ?.visibility = View.VISIBLE
+            } else {
+                childList.add(child)
 
-            layout_container!!.addView(view)
+                val view = LayoutInflater.from(this).inflate(R.layout.layout_characteric_operation, null)
+                view.tag = bleDevice?.key + characteristic?.uuid.toString() + charaProp
+                val layoutAdd = view.findViewById<LinearLayout>(R.id.layout_add)
+                val textTitle = view.findViewById<TextView>(R.id.text_title)
+                textTitle.text = characteristic?.uuid.toString() + getString(R.string.data_changed)
+                val text = view.findViewById<TextView>(R.id.txt)
+                text.movementMethod = ScrollingMovementMethod.getInstance()
+
+                when (charaProp) {
+                    PROPERTY_READ -> {
+                        val viewAdd = LayoutInflater.from(this).inflate(R.layout.layout_characteric_operation_button, null)
+                        val button = viewAdd.findViewById<Button>(R.id.button)
+                        button.text = getString(R.string.read)
+                        button.setOnClickListener {
+                            BleManager.getInstance().read(
+                                bleDevice,
+                                characteristic?.service?.uuid.toString(),
+                                characteristic?.uuid.toString(),
+                                object : BleReadCallback() {
+                                    override fun onReadSuccess(data: ByteArray) {
+                                        runOnUiThread {
+                                            addText(
+                                                text,
+                                                HexUtil.formatHexString(data, true)
+                                            )
+                                        }
+                                    }
+
+                                    override fun onReadFailure(exception: BleException) {
+                                        runOnUiThread {
+                                            addText(
+                                                text,
+                                                exception.toString()
+                                            )
+                                        }
+                                    }
+                                })
+                        }
+                        layoutAdd.addView(viewAdd)
+                    }
+
+                    PROPERTY_WRITE -> {
+                        val viewAdd = LayoutInflater.from(this).inflate(R.layout.layout_characteric_operation_et, null)
+                        val editText = viewAdd.findViewById<EditText>(R.id.editText)
+                        val button = viewAdd.findViewById<Button>(R.id.button)
+                        button.text = getString(R.string.write)
+                        button.setOnClickListener(View.OnClickListener {
+                            val hex = editText.text.toString()
+                            if (TextUtils.isEmpty(hex)) {
+                                return@OnClickListener
+                            }
+                            BleManager.getInstance().write(
+                                bleDevice,
+                                characteristic?.service?.uuid.toString(),
+                                characteristic?.uuid.toString(),
+                                HexUtil.hexStringToBytes(hex),
+                                object : BleWriteCallback() {
+                                    override fun onWriteSuccess(
+                                        current: Int,
+                                        total: Int,
+                                        justWrite: ByteArray
+                                    ) {
+                                        runOnUiThread {
+                                            addText(
+                                                text, "write success, current: " + current
+                                                        + " total: " + total
+                                                        + " justWrite: " + HexUtil.formatHexString(
+                                                    justWrite,
+                                                    true
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    override fun onWriteFailure(exception: BleException) {
+                                        runOnUiThread {
+                                            addText(
+                                                text,
+                                                exception.toString()
+                                            )
+                                        }
+                                    }
+                                })
+                        })
+                        layoutAdd.addView(viewAdd)
+                    }
+
+                    PROPERTY_WRITE_NO_RESPONSE -> {
+                        val viewAdd = LayoutInflater.from(this).inflate(R.layout.layout_characteric_operation_et, null)
+                        val editText = viewAdd.findViewById<EditText>(R.id.editText)
+                        val button = viewAdd.findViewById<Button>(R.id.button)
+                        button.text = getString(R.string.write)
+                        button.setOnClickListener(View.OnClickListener {
+                            val hex = editText.text.toString()
+                            if (TextUtils.isEmpty(hex)) {
+                                return@OnClickListener
+                            }
+                            BleManager.getInstance().write(
+                                bleDevice,
+                                characteristic?.service?.uuid.toString(),
+                                characteristic?.uuid.toString(),
+                                HexUtil.hexStringToBytes(hex),
+                                object : BleWriteCallback() {
+                                    override fun onWriteSuccess(
+                                        current: Int,
+                                        total: Int,
+                                        justWrite: ByteArray
+                                    ) {
+                                        runOnUiThread {
+                                            addText(
+                                                text, "write success, current: " + current
+                                                        + " total: " + total
+                                                        + " justWrite: " + HexUtil.formatHexString(
+                                                    justWrite,
+                                                    true
+                                                )
+                                            )
+                                        }
+                                    }
+
+                                    override fun onWriteFailure(exception: BleException) {
+                                        runOnUiThread {
+                                            addText(
+                                                text,
+                                                exception.toString()
+                                            )
+                                        }
+                                    }
+                                })
+                        })
+                        layoutAdd.addView(viewAdd)
+                    }
+
+                    PROPERTY_NOTIFY -> {
+                        val viewAdd = LayoutInflater.from(this).inflate(R.layout.layout_characteric_operation_button, null)
+                        val button = viewAdd.findViewById<Button>(R.id.button)
+                        button.text = getString(R.string.open_notification)
+                        button.setOnClickListener {
+                            if (button.text.toString() == getString(R.string.open_notification)) {
+                                button.text = getString(R.string.close_notification)
+                                BleManager.getInstance().notify(
+                                    bleDevice,
+                                    characteristic?.service?.uuid.toString(),
+                                    characteristic?.uuid.toString(),
+                                    object : BleNotifyCallback() {
+
+                                        override fun onNotifySuccess() {
+                                            runOnUiThread {
+                                                addText(
+                                                    text,
+                                                    "notify success"
+                                                )
+                                            }
+                                        }
+
+                                        override fun onNotifyFailure(exception: BleException) {
+                                            runOnUiThread {
+                                                addText(
+                                                    text,
+                                                    exception.toString()
+                                                )
+                                            }
+                                        }
+
+                                        override fun onCharacteristicChanged(data: ByteArray) {
+                                            runOnUiThread {
+                                                addText(
+                                                    text,
+                                                    HexUtil.formatHexString(
+                                                        characteristic?.value,
+                                                        true
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    })
+                            } else {
+                                button.text = getString(R.string.open_notification)
+                                BleManager.getInstance().stopNotify(
+                                    bleDevice,
+                                    characteristic?.service?.uuid.toString(),
+                                    characteristic?.uuid.toString()
+                                )
+                            }
+                        }
+                        layoutAdd.addView(viewAdd)
+                    }
+
+                    PROPERTY_INDICATE -> {
+                        val viewAdd = LayoutInflater.from(this).inflate(R.layout.layout_characteric_operation_button, null)
+                        val button = viewAdd.findViewById<Button>(R.id.button)
+                        button.text = getString(R.string.open_notification)
+                        button.setOnClickListener {
+                            if (button.text.toString() == getString(R.string.open_notification)) {
+                                button.text = getString(R.string.close_notification)
+                                BleManager.getInstance().indicate(
+                                    bleDevice,
+                                    characteristic?.service?.uuid.toString(),
+                                    characteristic?.uuid.toString(),
+                                    object : BleIndicateCallback() {
+
+                                        override fun onIndicateSuccess() {
+                                            runOnUiThread {
+                                                addText(
+                                                    text,
+                                                    "indicate success"
+                                                )
+                                            }
+                                        }
+
+                                        override fun onIndicateFailure(exception: BleException) {
+                                            runOnUiThread {
+                                                addText(
+                                                    text,
+                                                    exception.toString()
+                                                )
+                                            }
+                                        }
+
+                                        override fun onCharacteristicChanged(data: ByteArray) {
+                                            runOnUiThread {
+                                                addText(
+                                                    text,
+                                                    HexUtil.formatHexString(
+                                                        characteristic?.value,
+                                                        true
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    })
+                            } else {
+                                button.text = getString(R.string.open_notification)
+                                BleManager.getInstance().stopIndicate(
+                                    bleDevice,
+                                    characteristic?.service?.uuid.toString(),
+                                    characteristic?.uuid.toString()
+                                )
+                            }
+                        }
+                        layoutAdd.addView(viewAdd)
+                    }
+                }
+
+                layoutContainer?.addView(view)
+            }
         }
-    }
-
-    private fun runOnUiThread(runnable: Runnable) {
-        if (isAdded() && getActivity() != null)
-            getActivity()!!.runOnUiThread(runnable)
     }
 
     private fun addText(textView: TextView, content: String) {
